@@ -274,12 +274,12 @@ function wsSetup() {
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
         // get the world
-        debug("WebSocket Error: start");
         fetch('/world')
             .then(
                 function(response) {
                     response.json().then(function(data) {
                         world = data;
+                        drawNextFrame()
                     })
                 })
     };
@@ -290,7 +290,10 @@ function wsSetup() {
         try {
             debug("WebSocket Recv:" + msg.data);
             //XXX: TODO What are you going to do here?
-            world = JSON.parse(msg.data);
+            let data = JSON.parse(msg.data);
+            for (let entity in data) {
+                world[entity] = data[entity];
+            }
             drawNextFrame();
         } catch (e) {
             alert("socket on message: " + e);
@@ -299,8 +302,6 @@ function wsSetup() {
 }
 
 wsSetup();
-
-
 
 
 // 30 frames per second

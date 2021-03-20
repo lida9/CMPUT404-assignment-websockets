@@ -26,14 +26,7 @@ app = Flask(__name__)
 sockets = Sockets(app)
 app.debug = True
 
-clients = list()
-def send_all(msg):
-    for client in clients:
-        client.put( msg )
-
-def send_all_json(obj):
-    send_all( json.dumps(obj) )
-
+# Reference https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
 class Client:
     def __init__(self):
         self.queue = queue.Queue()
@@ -77,10 +70,13 @@ class World:
     def world(self):
         return self.space
 
-myWorld = World()        
+myWorld = World()
+clients = list()
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+    for client in clients:
+        client.put(json.dumps({entity:data}))
 
 myWorld.add_set_listener( set_listener )
         
@@ -89,17 +85,17 @@ def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
     return redirect("/static/index.html")
 
-# Reference https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
     # XXX: TODO IMPLEMENT ME
     try:
         while True:
             msg = ws.receive()
-            print "WS RECV: %s" % msg
             if (msg is not None):
                 packet = json.loads(msg)
-                send_all_json( packet )
+                # send_all_json( packet )
+                for k,v in packet.items():
+                    myWorld.set(k, v)
             else:
                 break
     except:
@@ -119,7 +115,7 @@ def subscribe_socket(ws):
             msg = client.get()
             ws.send(msg)
     except Exception as e:# WebSocketError as e:
-        print "WS Error %s" % e
+        print("WS Error %s" % e)
     finally:
         clients.remove(client)
         gevent.kill(g)
@@ -167,4 +163,4 @@ if __name__ == "__main__":
         and run
         gunicorn -k flask_sockets.worker sockets:app
     '''
-    app.run()
+    os.system("bash run.sh")
